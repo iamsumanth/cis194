@@ -15,4 +15,3 @@ map' func inputs = foldr (\input acc -> applyFunc func acc input) [] inputs
 
 applyFunc :: (a -> b) -> [b] -> a -> [b]
 applyFunc func acc input = [func input] ++ acc
-
