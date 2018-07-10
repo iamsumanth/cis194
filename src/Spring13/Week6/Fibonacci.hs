@@ -27,3 +27,17 @@ streamFromList (x:xs) = Cons x (streamFromList xs)
 
 getStreamOfNumbers :: (Enum a, Num a) => Stream a
 getStreamOfNumbers = streamFromList [0..]
+
+streamRepeat :: a -> Stream a
+streamRepeat val = Cons val (streamRepeat val)
+
+streamMap :: (a -> b) -> Stream a -> Stream b
+streamMap func (Cons val nextStream) = Cons (func val) (streamMap func nextStream)
+
+streamFromSeed :: (a -> a) -> a -> Stream a
+streamFromSeed func input = Cons (input) (streamFromSeed func (func input))
+
+nats :: Stream Integer
+nats = streamFromList [0..]
+
+ruler :: Stream Integer
