@@ -1,10 +1,13 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -Wall #-}
 module Spring13.Week5.Calc
-  ( eval, evalStr, reify, testExp
+  ( eval, evalStr, reify, testExp, Expr
   ) where
 
 import Spring13.Week5.ExprT
 import Spring13.Week5.Parser
+import Spring13.Week5.VarExprT
+import qualified Data.Map as M
   --   data ExprT = Lit Integer
   --          | Add ExprT ExprT
   --          | Mul ExprT ExprT
@@ -30,6 +33,9 @@ class Expr a where
   add :: a -> a -> a
   mul :: a -> a -> a
 
+class HasVars a where
+  var :: String -> a
+  
 instance Expr ExprT where
   lit a = Lit a
   add expr1 expr2 = Add expr1 expr2
@@ -55,6 +61,22 @@ instance Expr Mod7 where
   add (Mod7 input1) (Mod7 input2) = Mod7 ((\x -> x `mod` 7) $ (+) input1 input2)
   mul (Mod7 input1) (Mod7 input2) = Mod7 ((\x -> x `mod` 7) $ (*) input1 input2)
 
+instance Expr VarExprT where
+  lit a = VLit a
+  add expr1 expr2 = VAdd expr1 expr2
+  mul expr1 expr2 = VMul expr1 expr2
+
+instance HasVars VarExprT where
+  var str = VVar str
+
+type MapExpr = M.Map String Integer -> Maybe Integer
+
+instance HasVars (MapExpr) where
+  var str = M.lookup str
+
+
+instance Expr (MapExpr) where
+  lit input = (\map -> Just input)
 
 reify :: ExprT -> ExprT
 reify = id
