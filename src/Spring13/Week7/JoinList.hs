@@ -5,6 +5,7 @@ module Spring13.Week7.JoinList
   ) where
 
 import Spring13.Week7.Sized
+import Spring13.Week7.Scrabble
 
 data JoinList m a = Empty
                   | Single m a
@@ -61,3 +62,8 @@ isLeft :: (Sized b, Monoid b) => Int -> JoinList b a -> Bool
 isLeft _ Empty = False
 isLeft index (Single sized a) = if index ==0 then True else False
 isLeft index (Append (sized) _ _) = if (index < (getSize (size sized))) then True else False
+
+
+
+scoreLine :: String -> JoinList Score String
+scoreLine str = Single (scoreString str) str
