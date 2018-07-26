@@ -12,7 +12,7 @@ instance Monoid GuestList where
 
 
 glCons :: Employee -> GuestList -> GuestList
-glCons (employee) (GL employees funScore) = GL (employees ++ [employee]) (funScore + empFun employee)
+glCons (employee) (GL employees funScore) = if (elem employee employees) then (GL employees funScore) else GL (employees ++ [employee]) (funScore + empFun employee)
 
 
 moreFun :: GuestList -> GuestList -> GuestList
@@ -20,6 +20,20 @@ moreFun guestList1 guestList2
     | guestList1 > guestList2 = guestList1
     | otherwise = guestList2
 
-   
-treeFold :: (a -> b) -> Tree a -> b
-treeFold func node = foldl foldTree node
+
+nextLevel :: Employee -> [(GuestList, GuestList)] -> (GuestList, GuestList)
+nextLevel employee subTrees = ((getBestGuestList employee (extractWithBoss subTrees)), (getBestGuestList employee (extractWithOutBoss subTrees)))
+
+extractWithBoss :: [(GuestList, GuestList)] -> [GuestList]
+extractWithBoss [] = mempty
+extractWithBoss guestLists = [withBoss | (withBoss, _) <- guestLists]
+
+extractWithOutBoss :: [(GuestList, GuestList)] -> [GuestList]
+extractWithOutBoss [] = mempty
+extractWithOutBoss guestLists = [withOutBoss | (_, withOutBoss) <- guestLists]
+
+getBestGuestList :: Employee -> [GuestList] -> GuestList
+getBestGuestList  employee [] = mempty
+getBestGuestList (employee) (guestList1:[]) = glCons employee guestList1
+getBestGuestList (employee) (guestList1:guestList2:[]) = moreFun (glCons employee guestList1) (glCons employee guestList2)
+getBestGuestList (employee) (guestList1:guestList2:rest) = getBestGuestList employee ([(moreFun (glCons employee guestList1) (glCons employee guestList2))] ++ rest)

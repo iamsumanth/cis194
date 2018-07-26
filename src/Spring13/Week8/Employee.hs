@@ -13,6 +13,18 @@ type Fun  = Integer
 data Employee = Emp { empName :: Name, empFun :: Fun }
   deriving (Show, Read, Eq)
 
+sampleGuestList1 :: GuestList
+sampleGuestList1 = GL [(Emp "Stan" 9), (Emp "Bob" 2), (Emp "Joe" 5), (Emp "John" 1)] 17
+
+sampleGuestList2 :: GuestList
+sampleGuestList2 = GL [(Emp "Sue" 5), (Emp "Fred" 3), (Emp "Sarah" 17), (Emp "Sam" 4)] 29
+
+sampleGuestList3 :: GuestList
+sampleGuestList3 = GL [(Emp "Sue" 5), (Emp "Fred" 3), (Emp "Sarah" 17)] 25
+
+sampleGuestList4 :: GuestList
+sampleGuestList4 = GL [(Emp "Fred" 3), (Emp "Sarah" 17)] 20
+
 -- A small company hierarchy to use for testing purposes.
 testCompany :: Tree Employee
 testCompany
