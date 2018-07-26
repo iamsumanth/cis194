@@ -25,11 +25,9 @@ nextLevel :: Employee -> [(GuestList, GuestList)] -> (GuestList, GuestList)
 nextLevel employee subTrees = ((getBestGuestList employee (extractWithBoss subTrees)), (getBestGuestList employee (extractWithOutBoss subTrees)))
 
 extractWithBoss :: [(GuestList, GuestList)] -> [GuestList]
-extractWithBoss [] = mempty
 extractWithBoss guestLists = [withBoss | (withBoss, _) <- guestLists]
 
 extractWithOutBoss :: [(GuestList, GuestList)] -> [GuestList]
-extractWithOutBoss [] = mempty
 extractWithOutBoss guestLists = [withOutBoss | (_, withOutBoss) <- guestLists]
 
 getBestGuestList :: Employee -> [GuestList] -> GuestList
