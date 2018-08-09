@@ -1,7 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Spring13.Week12.Risk 
-  ( DieValue
+  ( DieValue, Battlefield
   ) where
 
 import Control.Monad.Random
@@ -35,8 +36,36 @@ type Army = Int
 
 data Battlefield = Battlefield { attackers :: Army, defenders :: Army } deriving (Show)
 
+
+instance Monoid Battlefield where
+  mempty = Battlefield 0 0
+  mappend (Battlefield a1 d1) (Battlefield a2 d2) = Battlefield (a1 + a2) (d1 + d2)
+
+
 battle :: Battlefield -> Rand StdGen Battlefield
-battle (Battlefield attackers defenders) = setBattle (getDieForAttacker attackers) (getDieForDefender defenders)
+battle battleField = 
+  (\(restingBattlefield, fightingBattlefield) -> 
+    (setBattle (getDieForAttacker (attackers fightingBattlefield)) (getDieForDefender (defenders fightingBattlefield))) >>= 
+      (\battlefield -> return (mappend battlefield restingBattlefield))
+    )
+    (getArmyForBattle battleField)
+  
+
+
+getArmyForBattle :: Battlefield -> (Battlefield, Battlefield)
+getArmyForBattle (Battlefield attackers defenders) = 
+  ((Battlefield (attackers - (availableAttackers attackers)) (defenders - (availableDefenders defenders))), 
+  (Battlefield (availableAttackers attackers) (availableDefenders defenders)))
+
+availableAttackers :: Army -> Army
+availableAttackers attackers
+    | attackers >= 3 = 3
+    | otherwise = attackers
+
+availableDefenders :: Army -> Army
+availableDefenders defenders
+    | defenders >= 2 = 2
+    | otherwise = defenders
 
 
 setBattle :: Rand StdGen [DieValue] -> Rand StdGen [DieValue] -> Rand StdGen Battlefield
@@ -57,11 +86,19 @@ comparePowers attackerPower defenderPower = compareDies
 
 compareDies :: Rand StdGen ([DieValue], [DieValue]) -> Rand StdGen (Int, Int)
 compareDies dies = 
-  dies >>= (\(attacker, defender) -> return ((compareEveryDieValue attacker defender (>)), (compareEveryDieValue attacker defender (<=))))
+  dies >>= (\(attacker, defender) -> 
+    let greatWarriors = (makeSameSize attacker defender) 
+        greatAttackers = (\(x,y) -> x) greatWarriors
+        greatDefenders = (\(x,y) -> y) greatWarriors
+    in return ((length attacker - length greatAttackers) + (compareEveryDieValue (greatWarriors) (>)), (length defender - length greatDefenders) + (compareEveryDieValue (greatWarriors) (<=))))
 
 
-compareEveryDieValue :: [DieValue] -> [DieValue] -> (DieValue -> DieValue -> Bool) -> Int
-compareEveryDieValue attacker defender predicate = sum . concat $ zipWith (\x y -> [1 | x `predicate` y]) attacker defender
+compareEveryDieValue :: ([DieValue], [DieValue]) -> (DieValue -> DieValue -> Bool) -> Int
+compareEveryDieValue (attacker, defender) predicate = sum . concat $ (zipTwoDies attacker defender predicate)
+
+
+zipTwoDies :: [DieValue] -> [DieValue] -> (DieValue -> DieValue -> Bool) -> [[Int]]
+zipTwoDies attacker defender predicate = zipWith (\x y -> [1 | x `predicate` y]) attacker defender
 
 sortDies :: Rand StdGen [DieValue] -> Rand StdGen [DieValue]
 sortDies dies =  dies >>= (\dieValues -> return (reverse (sort dieValues)))
@@ -71,11 +108,9 @@ getDieForAttacker 1 = getOneDie
 getDieForAttacker 2 = getTwoDies
 getDieForAttacker _ = getThreeDies
 
-
 getDieForDefender :: Army -> Rand StdGen [DieValue]
 getDieForDefender 1 = getOneDie
 getDieForDefender _ = getTwoDies
-
 
 getOneDie :: Rand StdGen [DieValue]
 getOneDie = die >>= (\die1 -> return [die1])
@@ -104,3 +139,20 @@ allowedDefenders :: Army -> Army
 allowedDefenders availabeDefenders
     | (availabeDefenders >= 2) = 2
     | otherwise = availabeDefenders
+
+
+diff :: [Int] -> [Int] -> [Int]
+diff a b = map (\(p, q) -> p - q) $ zip a b
+
+
+makeSameSize :: [DieValue] -> [DieValue] -> ([DieValue], [DieValue])
+makeSameSize arr1 arr2 
+    | length arr1 == length arr2 = (arr1, arr2)
+    | length arr1 < length arr2 = (arr1, cropList arr2 (length arr1))
+    | length arr1 > length arr2 = (cropList arr1 (length arr2), arr2)
+
+addZeros :: [Int] -> Int -> [Int]
+addZeros arr zerosToAdd = arr ++ (take zerosToAdd $ repeat 0)
+
+cropList :: [DieValue] -> Int -> [DieValue]
+cropList arr cropTill = take cropTill arr
