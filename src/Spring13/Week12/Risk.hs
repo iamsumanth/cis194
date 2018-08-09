@@ -1,13 +1,19 @@
 module Spring13.Week12.Risk 
-  ( DieValue
+  ( battle
   ) where
 
 import Control.Monad.Random
 import Spring13.Week12.Battlefield
 import Spring13.Week12.Dies
+import Debug.Trace
 
-------------------------------------------------------------
--- Risk
+----------------------- Tracing ----------------------------
+
+test :: Rand StdGen Battlefield
+test = let battleResult = battle (Battlefield 3 4) in battleResult >>= (\battleR -> trace (show battleR) return battleR)
+
+
+------------------------------------------------------------ 
 
 
 battle :: Battlefield -> Rand StdGen Battlefield
