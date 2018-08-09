@@ -11,49 +11,28 @@ import Spring13.Week12.Dies
 
 
 battle :: Battlefield -> Rand StdGen Battlefield
-battle battleField = 
-  (\(restingBattlefield, fightingBattlefield) -> 
-    (setBattle (getDieForAttacker (attackers fightingBattlefield)) (getDieForDefender (defenders fightingBattlefield))) >>= 
-      (\battlefield -> return (mappend battlefield restingBattlefield))
-    )
-    (getArmyForBattle battleField)
-  
+battle = executeBattle . splitReserveAndActiveBattlefield
 
+executeBattle :: (Battlefield, Battlefield) -> Rand StdGen Battlefield
+executeBattle (reserveBattlefield, fightingBattlefield) = 
+  (startWarInActiveBattlefield fightingBattlefield) >>= (\battlefield -> return (mappend battlefield reserveBattlefield))
 
-getArmyForBattle :: Battlefield -> (Battlefield, Battlefield)
-getArmyForBattle (Battlefield attackers defenders) = 
-  let participatingAttackers = availableAttackers attackers
-      participatingDefenders = availableDefenders defenders
-      restingAttackers = attackers - participatingAttackers
-      restingDefenders = defenders - participatingDefenders
-    in ((Battlefield restingAttackers restingDefenders), (Battlefield participatingAttackers participatingDefenders))
+startWarInActiveBattlefield :: Battlefield -> Rand StdGen Battlefield
+startWarInActiveBattlefield (Battlefield attackers defenders) = 
+  let sortedAttackerDies = (sortDies . getDieForAttacker) attackers
+      sortedDefenderDies = (sortDies . getDieForDefender) defenders
+  in getResultOfBattlefield sortedAttackerDies sortedDefenderDies
 
-availableAttackers :: Army -> Army
-availableAttackers attackers
-    | attackers >= 3 = 3
-    | otherwise = attackers
-
-availableDefenders :: Army -> Army
-availableDefenders defenders
-    | defenders >= 2 = 2
-    | otherwise = defenders
-
-
-setBattle :: Rand StdGen [DieValue] -> Rand StdGen [DieValue] -> Rand StdGen Battlefield
-setBattle attackerDies defenderDies = getAvailableBattlefield (sortDies attackerDies) (sortDies defenderDies)
-
-
-getAvailableBattlefield :: Rand StdGen [DieValue] -> Rand StdGen [DieValue] -> Rand StdGen Battlefield
-getAvailableBattlefield attackerPower defenderPower = 
+getResultOfBattlefield :: Rand StdGen [DieValue] -> Rand StdGen [DieValue] -> Rand StdGen Battlefield
+getResultOfBattlefield attackerPower defenderPower = 
   (comparePowers attackerPower defenderPower) >>= (\(attackerWon, defenderWon) -> 
     return (Battlefield {attackers = attackerWon, defenders = defenderWon} ))
 
 
-comparePowers :: Rand StdGen [DieValue] -> Rand StdGen [DieValue] -> Rand StdGen (Int, Int)
+comparePowers :: Rand StdGen [DieValue] -> Rand StdGen [DieValue] -> Rand StdGen (Army, Army)
 comparePowers attackerPower defenderPower = compareDies 
   (attackerPower >>= (\attackerResult ->
   defenderPower >>= (\defenderResult -> return (attackerResult, defenderResult))))
-
 
 compareDies :: Rand StdGen ([DieValue], [DieValue]) -> Rand StdGen (Int, Int)
 compareDies dies = 
@@ -74,6 +53,25 @@ compareEveryDieValue attackers defenders predicate = sum . concat $ zipTwoDies a
 
 zipTwoDies :: [DieValue] -> [DieValue] -> (DieValue -> DieValue -> Bool) -> [[Int]]
 zipTwoDies attacker defender predicate = zipWith (\x y -> [1 | x `predicate` y]) attacker defender
+
+
+splitReserveAndActiveBattlefield :: Battlefield -> (Battlefield, Battlefield)
+splitReserveAndActiveBattlefield (Battlefield attackers defenders) = 
+  let participatingAttackers = availableAttackers attackers
+      participatingDefenders = availableDefenders defenders
+      restingAttackers = attackers - participatingAttackers
+      restingDefenders = defenders - participatingDefenders
+    in ((Battlefield restingAttackers restingDefenders), (Battlefield participatingAttackers participatingDefenders))
+
+availableAttackers :: Army -> Army
+availableAttackers attackers
+    | attackers >= 3 = 3
+    | otherwise = attackers
+
+availableDefenders :: Army -> Army
+availableDefenders defenders
+    | defenders >= 2 = 2
+    | otherwise = defenders
 
 --------------------------------------------------- Risk
 
