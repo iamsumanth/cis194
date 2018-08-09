@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Spring13.Week12.Dies
-  ( DieValue, die, makeSameSize, sortDies, zipTwoDies
+  ( DieValue, die, makeSameSize, sortDies
   ) where
 
 import Control.Monad.Random
@@ -31,9 +31,6 @@ makeSameSize arr1 arr2
 
 sortDies :: Rand StdGen [DieValue] -> Rand StdGen [DieValue]
 sortDies dies =  dies >>= (\dieValues -> return (reverse (sort dieValues)))
-
-zipTwoDies :: [DieValue] -> [DieValue] -> (DieValue -> DieValue -> Bool) -> [[Int]]
-zipTwoDies attacker defender predicate = zipWith (\x y -> [1 | x `predicate` y]) attacker defender
 
 ----------------------------------------------------- 
 

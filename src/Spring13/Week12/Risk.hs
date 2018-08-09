@@ -22,8 +22,11 @@ battle battleField =
 
 getArmyForBattle :: Battlefield -> (Battlefield, Battlefield)
 getArmyForBattle (Battlefield attackers defenders) = 
-  ((Battlefield (attackers - (availableAttackers attackers)) (defenders - (availableDefenders defenders))), 
-  (Battlefield (availableAttackers attackers) (availableDefenders defenders)))
+  let participatingAttackers = availableAttackers attackers
+      participatingDefenders = availableDefenders defenders
+      restingAttackers = attackers - participatingAttackers
+      restingDefenders = defenders - participatingDefenders
+    in ((Battlefield restingAttackers restingDefenders), (Battlefield participatingAttackers participatingDefenders))
 
 availableAttackers :: Army -> Army
 availableAttackers attackers
@@ -60,13 +63,17 @@ compareDies dies =
         greatDefenders = (\(x,y) -> y) greatWarriors
         bystandingAttacker = length attacker - length greatAttackers
         bystandingDefender = length defender - length greatDefenders
-        saviorsOfLand = compareEveryDieValue greatAttackers greatDefenders (<=)
-    in return (bystandingAttacker + (compareEveryDieValue greatAttackers greatDefenders (>)), bystandingDefender + saviorsOfLand))
+        winningDefenders = compareEveryDieValue greatAttackers greatDefenders (<=)
+        winningAttackers = compareEveryDieValue greatAttackers greatDefenders (>)
+    in return (bystandingAttacker + winningAttackers, bystandingDefender + winningDefenders))
 
 
 compareEveryDieValue :: [DieValue] -> [DieValue] -> (DieValue -> DieValue -> Bool) -> Int
 compareEveryDieValue attackers defenders predicate = sum . concat $ zipTwoDies attackers defenders predicate
 
+
+zipTwoDies :: [DieValue] -> [DieValue] -> (DieValue -> DieValue -> Bool) -> [[Int]]
+zipTwoDies attacker defender predicate = zipWith (\x y -> [1 | x `predicate` y]) attacker defender
 
 --------------------------------------------------- Risk
 
