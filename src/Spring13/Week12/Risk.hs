@@ -11,14 +11,22 @@ import Debug.Trace
 
 invade :: Battlefield -> Rand StdGen Battlefield
 invade battlefield = 
-  (battleWithTrace battlefield) >>= 
+  (\(picket, battlefieldForWar) -> 
+    (battleWithTrace battlefieldForWar) >>= 
     (\resultingBattlefield -> 
-      if isBattleOver resultingBattlefield then return (resultingBattlefield) 
-      else invade resultingBattlefield)
+      if isBattleOver resultingBattlefield then return (addPicketToBattleField picket resultingBattlefield) 
+      else invade (addPicketToBattleField picket resultingBattlefield))) (keepOneAttackingArmy battlefield)
+
+
+addPicketToBattleField :: Army -> Battlefield -> Battlefield
+addPicketToBattleField picket (Battlefield attackers defenders) = Battlefield (attackers + picket) (defenders)
+
+keepOneAttackingArmy :: Battlefield -> (Army, Battlefield)
+keepOneAttackingArmy (Battlefield attackers defenders) = (1, Battlefield (attackers - 1) (defenders))
 
 isBattleOver :: Battlefield -> Bool
 isBattleOver battlefield 
-  | attackers battlefield <= 1 = True
+  | attackers battlefield == 0 = True
   | defenders battlefield == 0 = True
   | otherwise = False
   
@@ -28,7 +36,7 @@ isBattleOver battlefield
 battleWithTrace :: Battlefield -> Rand StdGen Battlefield
 battleWithTrace battlefield = 
   let battleResult = battle (battlefield) 
-  in battleResult >>= (\battleR -> trace (show battleR) return battleR)
+  in battleResult >>= (\battleR -> trace ("Running Battle :: " ++ show battleR) return battleR)
 
 -------------------------------------------------------------
 
