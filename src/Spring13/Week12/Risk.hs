@@ -7,14 +7,30 @@ import Spring13.Week12.Battlefield
 import Spring13.Week12.Dies
 import Debug.Trace
 
+------------------------ Invade ------------------------------ 
+
+invade :: Battlefield -> Rand StdGen Battlefield
+invade battlefield = 
+  (battleWithTrace battlefield) >>= 
+    (\resultingBattlefield -> 
+      if isBattleOver resultingBattlefield then return (resultingBattlefield) 
+      else invade resultingBattlefield)
+
+isBattleOver :: Battlefield -> Bool
+isBattleOver battlefield 
+  | attackers battlefield <= 1 = True
+  | defenders battlefield == 0 = True
+  | otherwise = False
+  
+
 ----------------------- Tracing ----------------------------
 
-test :: Rand StdGen Battlefield
-test = let battleResult = battle (Battlefield 3 4) in battleResult >>= (\battleR -> trace (show battleR) return battleR)
+battleWithTrace :: Battlefield -> Rand StdGen Battlefield
+battleWithTrace battlefield = 
+  let battleResult = battle (battlefield) 
+  in battleResult >>= (\battleR -> trace (show battleR) return battleR)
 
-
------------------------------------------------------------- 
-
+-------------------------------------------------------------
 
 battle :: Battlefield -> Rand StdGen Battlefield
 battle = executeBattle . splitReserveAndActiveBattlefield
