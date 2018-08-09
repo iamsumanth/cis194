@@ -2,9 +2,9 @@ module Spring13.Week12.Risk
   ( DieValue
   ) where
 
-import Data.Sort
 import Control.Monad.Random
-import Spring13.Week12.RiskTypes
+import Spring13.Week12.Battlefield
+import Spring13.Week12.Dies
 
 ------------------------------------------------------------
 -- Risk
@@ -58,18 +58,17 @@ compareDies dies =
     let greatWarriors = (makeSameSize attacker defender) 
         greatAttackers = (\(x,y) -> x) greatWarriors
         greatDefenders = (\(x,y) -> y) greatWarriors
-    in return ((length attacker - length greatAttackers) + (compareEveryDieValue (greatWarriors) (>)), (length defender - length greatDefenders) + (compareEveryDieValue (greatWarriors) (<=))))
+        bystandingAttacker = length attacker - length greatAttackers
+        bystandingDefender = length defender - length greatDefenders
+        saviorsOfLand = compareEveryDieValue greatAttackers greatDefenders (<=)
+    in return (bystandingAttacker + (compareEveryDieValue greatAttackers greatDefenders (>)), bystandingDefender + saviorsOfLand))
 
 
-compareEveryDieValue :: ([DieValue], [DieValue]) -> (DieValue -> DieValue -> Bool) -> Int
-compareEveryDieValue (attacker, defender) predicate = sum . concat $ (zipTwoDies attacker defender predicate)
+compareEveryDieValue :: [DieValue] -> [DieValue] -> (DieValue -> DieValue -> Bool) -> Int
+compareEveryDieValue attackers defenders predicate = sum . concat $ zipTwoDies attackers defenders predicate
 
 
-zipTwoDies :: [DieValue] -> [DieValue] -> (DieValue -> DieValue -> Bool) -> [[Int]]
-zipTwoDies attacker defender predicate = zipWith (\x y -> [1 | x `predicate` y]) attacker defender
-
-sortDies :: Rand StdGen [DieValue] -> Rand StdGen [DieValue]
-sortDies dies =  dies >>= (\dieValues -> return (reverse (sort dieValues)))
+--------------------------------------------------- Risk
 
 getDieForAttacker :: Army -> Rand StdGen [DieValue]
 getDieForAttacker 1 = getOneDie
@@ -89,38 +88,3 @@ getTwoDies = die >>= (\die1 -> die >>= (\die2 -> return [die1, die2]))
 getThreeDies :: Rand StdGen [DieValue]
 getThreeDies = die >>= (\die1 -> die >>= (\die2 -> die >>= (\die3 -> return [die1, die2, die3])))
 
-
-
-getAttackers :: Battlefield -> Army
-getAttackers battlefield = attackers battlefield
-
-getDefenders :: Battlefield -> Army
-getDefenders battlefield = defenders battlefield
-
-allowedAttackers :: Army -> Army
-allowedAttackers availableAttackers
-    | (availableAttackers >= 3) = 3
-    | otherwise = availableAttackers
-
-
-allowedDefenders :: Army -> Army
-allowedDefenders availabeDefenders
-    | (availabeDefenders >= 2) = 2
-    | otherwise = availabeDefenders
-
-
-diff :: [Int] -> [Int] -> [Int]
-diff a b = map (\(p, q) -> p - q) $ zip a b
-
-
-makeSameSize :: [DieValue] -> [DieValue] -> ([DieValue], [DieValue])
-makeSameSize arr1 arr2 
-    | length arr1 == length arr2 = (arr1, arr2)
-    | length arr1 < length arr2 = (arr1, cropList arr2 (length arr1))
-    | length arr1 > length arr2 = (cropList arr1 (length arr2), arr2)
-
-addZeros :: [Int] -> Int -> [Int]
-addZeros arr zerosToAdd = arr ++ (take zerosToAdd $ repeat 0)
-
-cropList :: [DieValue] -> Int -> [DieValue]
-cropList arr cropTill = take cropTill arr
