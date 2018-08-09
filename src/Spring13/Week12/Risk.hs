@@ -10,27 +10,28 @@ import Debug.Trace
 ------------------------ Invade ------------------------------ 
 
 invade :: Battlefield -> Rand StdGen Battlefield
-invade battlefield = 
-  (\(picket, battlefieldForWar) -> 
-    (battleWithTrace battlefieldForWar) >>= 
-    (\resultingBattlefield -> 
-      if isBattleOver resultingBattlefield then return (addPicketToBattleField picket resultingBattlefield) 
-      else invade (addPicketToBattleField picket resultingBattlefield))) (keepOneAttackingArmy battlefield)
+invade = startBattle . reserveOneAttackingArmy
 
+startBattle :: (Army, Battlefield) -> Rand StdGen Battlefield
+startBattle (picket, battlefield) = 
+  (trace ("-> Starting Battle with::  " ++ show battlefield ++ "\n") goForBattle battlefield) >>= (\battlefield -> return (addPicketToBattleField picket battlefield))
+
+goForBattle :: Battlefield -> Rand StdGen Battlefield
+goForBattle battlefield = (battleWithTrace battlefield) >>= 
+  (\resultingBattlefield -> 
+    if isBattleOver resultingBattlefield then return resultingBattlefield
+    else goForBattle resultingBattlefield)
 
 addPicketToBattleField :: Army -> Battlefield -> Battlefield
 addPicketToBattleField picket (Battlefield attackers defenders) = Battlefield (attackers + picket) (defenders)
 
-keepOneAttackingArmy :: Battlefield -> (Army, Battlefield)
-keepOneAttackingArmy (Battlefield attackers defenders) = (1, Battlefield (attackers - 1) (defenders))
+reserveOneAttackingArmy :: Battlefield -> (Army, Battlefield)
+reserveOneAttackingArmy (Battlefield attackers defenders) = (1, Battlefield (attackers - 1) (defenders))
 
 isBattleOver :: Battlefield -> Bool
-isBattleOver battlefield 
-  | attackers battlefield == 0 = True
-  | defenders battlefield == 0 = True
-  | otherwise = False
-  
-
+isBattleOver (Battlefield 0 _) = True
+isBattleOver (Battlefield _ 0) = True
+isBattleOver (Battlefield _ _) = False
 ----------------------- Tracing ----------------------------
 
 battleWithTrace :: Battlefield -> Rand StdGen Battlefield
