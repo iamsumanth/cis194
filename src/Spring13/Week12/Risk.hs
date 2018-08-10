@@ -13,15 +13,14 @@ import Debug.Trace
 
 ----------------------- Probability -------------------------
 
--- (fmap (attackerWon) $ invade (Battlefield 200 2500))
-
 instance Monoid (Rand StdGen Double) where
   mempty = return 0.0
-  mappend b1 b2 = b1 >>= (\battle1 -> b2 >>= (\battle2 -> return (battle1 + battle2)))
+  mappend battle1 battle2 = battle1 >>= (\b1 -> battle2 >>= (\b2 -> return (b1 + b2)))
 
 
 successProb :: Battlefield -> Rand StdGen Double
-successProb battlefield = attackerWinningCount (take 1000 $ (repeat (invade battlefield)))
+successProb = (fmap (/1000.0)). attackerWinningCount . (replicate 1000) . invade
+
 
 attackerWinningCount :: [Rand StdGen Battlefield] -> Rand StdGen Double
 attackerWinningCount = mconcat . map (fmap attackerWon)
