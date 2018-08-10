@@ -1,3 +1,6 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Spring13.Week12.Risk 
   ( battle
   ) where
@@ -7,14 +10,49 @@ import Spring13.Week12.Battlefield
 import Spring13.Week12.Dies
 import Debug.Trace
 
+
+----------------------- Probability -------------------------
+
+-- (fmap (attackerWon) $ invade (Battlefield 200 2500))
+
+successProb :: Battlefield -> Rand StdGen Double
+successProb battlefield = attackerWinningCount (take 1000 $ (repeat (invade battlefield)))
+
+
+attackerWinningCount :: [Rand StdGen Battlefield] -> Rand StdGen Double
+attackerWinningCount battles = mconcat (map (fmap attackerWon) battles)
+
+instance Monoid (Rand StdGen Double) where
+  mempty = return 0.0
+  mappend b1 b2 = b1 >>= (\battle1 -> b2 >>= (\battle2 -> return (battle1 + battle2)))
+
+
+
+getAttackerCount :: Rand StdGen Battlefield -> Rand StdGen Battlefield -> Rand StdGen Double
+getAttackerCount b1 b2 = (b1 >>= (\battle1 -> 
+  b2 >>= (\battle2 -> return (attackerWon battle1 + attackerWon battle2))))
+
+attackerWon :: Battlefield -> Double
+attackerWon (Battlefield 1 _) = 0
+attackerWon (Battlefield _ 0) = 1
+
+
 ------------------------ Invade ------------------------------ 
+-- Does not handle attackers with 0 and 1
+--------------------------------------------------------------
+
+traceStarting :: Battlefield -> String
+traceStarting battlefield = 
+  "-> Starting Battle with::  " ++ show battlefield ++ "\n" ++
+    "kept 1 army as picket \n"
 
 invade :: Battlefield -> Rand StdGen Battlefield
 invade = startBattle . reserveOneAttackingArmy
 
 startBattle :: (Army, Battlefield) -> Rand StdGen Battlefield
 startBattle (picket, battlefield) = 
-  (trace ("-> Starting Battle with::  " ++ show battlefield ++ "\n") goForBattle battlefield) >>= (\battlefield -> return (addPicketToBattleField picket battlefield))
+  let goForBattleWithTrace = trace (traceStarting battlefield) goForBattle battlefield
+  in (goForBattleWithTrace) >>= (\battlefield -> return (addPicketToBattleField picket battlefield))
 
 goForBattle :: Battlefield -> Rand StdGen Battlefield
 goForBattle battlefield = (battleWithTrace battlefield) >>= 
@@ -32,6 +70,7 @@ isBattleOver :: Battlefield -> Bool
 isBattleOver (Battlefield 0 _) = True
 isBattleOver (Battlefield _ 0) = True
 isBattleOver (Battlefield _ _) = False
+
 ----------------------- Tracing ----------------------------
 
 battleWithTrace :: Battlefield -> Rand StdGen Battlefield
@@ -104,7 +143,6 @@ availableDefenders defenders
     | defenders >= 2 = 2
     | otherwise = defenders
 
---------------------------------------------------- Risk
 
 getDieForAttacker :: Army -> Rand StdGen [DieValue]
 getDieForAttacker 1 = getOneDie
